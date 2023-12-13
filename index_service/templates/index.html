@@ -8,7 +8,7 @@
     <h1>Panel de Opciones</h1>
     <ul>
         {% for option in options %}
-            <li><a href="/{{ option }}/">{{ option }}</a></li>
+            <li><a href="/{{ option|slugify }}/">{{ option }}</a></li>
         {% endfor %}
     </ul>
 </body>
