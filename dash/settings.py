@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'rest_framework',
     # Local
     'index_service.apps.IndexServiceConfig',
+    'general_report_service.apps.GeneralReportServiceConfig',
 ]
 
 MIDDLEWARE = [

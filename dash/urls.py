@@ -7,4 +7,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index, name='index'),
     path('index_service/', include(api_urls)),
+    path('', include('general_report_service.urls')),
 ]
