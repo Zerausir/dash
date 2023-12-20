@@ -1,28 +1,25 @@
-import os
-import ast
+import json
 import requests
 import panel as pn
-from django.shortcuts import render
 from rest_framework.views import APIView
-from dotenv import load_dotenv
-
-load_dotenv()
+from django.conf import settings
+from django.urls import reverse
 
 
 class GeneralReportView(APIView):
     template_name = 'general_report.html'
 
     def get_options_from_index_service_api(self):
-        # Make a GET request to the index service API
-        index_service_api_url = "http://127.0.0.1:8000/index_service/api/v1/"
-        response = requests.get(index_service_api_url)
+        try:
+            # Make a GET request to the index service API
+            response = requests.get(reverse('index-api'))
 
-        # Check if the request was successful (HTTP status code 200)
-        if response.status_code == 200:
+            # Check if the request was successful (HTTP status code 200)
+            response.raise_for_status()
             options = response.json().get('options', [])
             return options
-        else:
-            # Handle the case when the request was not successful
+        except requests.RequestException as e:
+            # Log the error or handle it appropriately
             return []
 
     def get(self, request):
@@ -36,7 +33,7 @@ class GeneralReportView(APIView):
         return pn.serve(general_report_panel)
 
     def create_general_report_panel(self, options):
-        cities = ast.literal_eval(os.getenv("CITIES", "[]"))
+        cities = json.loads(settings.CITIES)
 
         # Date pickers
         start_date_picker = pn.widgets.DatePicker(name='Start Date')

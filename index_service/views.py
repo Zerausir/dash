@@ -1,19 +1,15 @@
-# index_service/views.py
+import json
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers import PostDetailSerializer
-import os
-import ast
-from dotenv import load_dotenv
-
-load_dotenv()
+from django.conf import settings
 
 
 class PostDetail(APIView):
     def get(self, request, option, format=None):
-        options = ast.literal_eval(os.getenv("OPTIONS", "[]"))
+        options = json.loads(settings.OPTIONS)
 
         if option in options:
             serializer = PostDetailSerializer(data={'option': option})
@@ -26,5 +22,5 @@ class PostDetail(APIView):
 
 
 def index(request):
-    options = ast.literal_eval(os.getenv("OPTIONS", "[]"))
+    options = json.loads(settings.OPTIONS)
     return render(request, 'index.html', {'options': options})

@@ -1,7 +1,7 @@
 from django.urls import path, include
-from . import views
+from .views import index
 
 urlpatterns = [
-    path('', views.index, name='index'),
+    path('', index, name='index'),
     path('api/v1/', include('index_service.api.urls')),
 ]
