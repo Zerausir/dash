@@ -1,10 +1,16 @@
 import requests
 from django.urls import reverse
-
+from django.conf import settings  # Import the settings module
 
 def get_options_from_index_service_api():
     try:
-        response = requests.get(reverse('index-api'))
+        base_url = settings.BASE_URL  # Replace with your actual setting name
+        api_endpoint = reverse('index-api')  # Assuming 'index-api' is the name of your URL pattern
+
+        # Construct the full URL
+        full_url = f"{base_url}{api_endpoint}"
+
+        response = requests.get(full_url)
         response.raise_for_status()
         options = response.json().get('options', [])
         return options

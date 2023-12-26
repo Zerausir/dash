@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 from pathlib import Path
 from environs import Env
+import json
 
 env = Env()
 env.read_env()
@@ -140,3 +141,15 @@ DOWNLOAD_ROUTE = env("DOWNLOAD_ROUTE")
 FILE_AUT_SUS = env("FILE_AUT_SUS")
 FILE_AUT_BP = env("FILE_AUT_BP")
 FILE_ESTACIONES = env("FILE_ESTACIONES")
+
+CITIES1 = json.loads(env("CITIES1", "{}"))
+MONTH_TRANSLATIONS = json.loads(env("MONTH_TRANSLATIONS", "{}"))
+
+COLUMNS_FM = json.loads(env("COLUMNAS_FM"))
+COLUMNS_TV = json.loads(env("COLUMNAS_TV"))
+COLUMNS_AM = json.loads(env("COLUMNAS_AM"))
+COLUMNS_AUT = json.loads(env("COLUMNAS_AUT"))
+COLUMNS_AUTBP = json.loads(env("COLUMNAS_AUTBP"))
+
+# Add BASE_URL setting
+BASE_URL = env("BASE_URL", "http://localhost:8000")  # Update with your actual base URL
