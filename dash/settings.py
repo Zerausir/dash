@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 from pathlib import Path
 from environs import Env
+from decouple import config
 import json
 
 env = Env()
@@ -142,8 +143,8 @@ FILE_AUT_SUS = env("FILE_AUT_SUS")
 FILE_AUT_BP = env("FILE_AUT_BP")
 FILE_ESTACIONES = env("FILE_ESTACIONES")
 
-CITIES1 = json.loads(env("CITIES1", "{}"))
-MONTH_TRANSLATIONS = json.loads(env("MONTH_TRANSLATIONS", "{}"))
+CITIES1 = config("CITIES1", default={}, cast=lambda v: json.loads(v))
+MONTH_TRANSLATIONS = config("MONTH_TRANSLATIONS", default={}, cast=lambda v: json.loads(v))
 
 COLUMNS_FM = json.loads(env("COLUMNAS_FM"))
 COLUMNS_TV = json.loads(env("COLUMNAS_TV"))

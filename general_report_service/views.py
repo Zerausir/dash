@@ -12,38 +12,8 @@ class GeneralReportView(APIView):
     template_name = 'general_report.html'
 
     # Define constants for cities and months
-    CITIES = {"Tulcan": ("TUL", "TULCÁN", "scn-l01FM", "scn-l01TV"),
-              "Ibarra": ("IBA", "IBARRA", "scn-l02FM", "scn-l02TV"),
-              "Esmeraldas": ("ESM", "ESMERALDAS", "scn-l03FM", "scn-l03TV"),
-              "Nueva Loja": ("NL", "NUEVA LOJA", "scn-l05FM", "scn-l05TV"),
-              "Quito": ("UIO", "QUITO", "scn-l06FM", "scn-l06TV", "scn-l06AM"),
-              "Guayaquil": ("GYE", "GUAYAQUIL", "scc-l02FM", "scc-l02TV", "scc-l02AM"),
-              "Quevedo": ("QUE", "QUEVEDO", "scc-l03FM", "scc-l03TV"),
-              "Machala": ("MACH", "MACHALA", "scc-l04FM", "scc-l04TV"),
-              "Taura": ("TAU", "TAURA", "scc-l05FM", "scc-l05TV"),
-              "Zamora": ("ZAM", "ZAMORA", "scs-l01FM", "scs-l01TV"), "Loja": ("LOJ", "LOJA", "scs-l02FM", "scs-l02TV"),
-              "Cañar": ("CAÑ", "CAÑAR", "scs-l03FM", "scs-l03TV"), "Macas": ("MAC", "MAC", "scs-l04FM", "scs-l04TV"),
-              "Cuenca": ("CUE", "CUE", "scs-l05FM", "scs-l05TV", "scs-l05AM"),
-              "Riobamba": ("RIO", "RIOBAMBA", "scd-l01FM", "scd-l01TV"),
-              "Ambato": ("AMB", "AMBATO", "scd-l02FM", "scd-l02TV"), "Puyo": ("PUY", "PUYO", "scd-l03FM", "scd-l03TV"),
-              "Manta": ("MAN", "MANTA", "scm-l01FM", "scm-l01TV"),
-              "Santo Domingo": ("STO", "SANTO DOMINGO", "scm-l02FM", "scm-l02TV"),
-              "Santa Cruz": ("STC", "SANTA CRUZ", "erm-l01FM", "erm-l01TV")}
-
-    MONTH_TRANSLATIONS = {
-        'January': 'Enero',
-        'February': 'Febrero',
-        'March': 'Marzo',
-        'April': 'Abril',
-        'May': 'Mayo',
-        'June': 'Junio',
-        'July': 'Julio',
-        'August': 'Agosto',
-        'September': 'Septiembre',
-        'October': 'Octubre',
-        'November': 'Noviembre',
-        'December': 'Diciembre',
-    }
+    CITIES1 = settings.CITIES1
+    MONTH_TRANSLATIONS = settings.MONTH_TRANSLATIONS
 
     def get_options(self):
         return get_options_from_index_service_api()
@@ -53,30 +23,35 @@ class GeneralReportView(APIView):
         fecha_inicio = selected_options['start_date'].strftime("%Y-%m-%d")
         fecha_fin = selected_options['end_date'].strftime("%Y-%m-%d")
 
-        ciu, autori, sheet_name1, sheet_name2, *rest = self.CITIES.get(ciudad, (None, None, None, None, None))
+        ciu, autori, sheet_name1, sheet_name2, *rest = self.CITIES1.get(ciudad, (None, None, None, None, None))
+        sheet_name3 = rest[0] if rest else None  # Assign sheet_name3 only if rest is not empty
 
-        if len(rest) > 1:
-            sheet_name3 = rest[0]
-        else:
-            sheet_name3 = None
-
-        Mes_inicio = self.translate_month(datetime.datetime.strptime(fecha_inicio, '%Y-%m-%d').strftime("%B"))
-        Mes_fin = self.translate_month(datetime.datetime.strptime(fecha_fin, '%Y-%m-%d').strftime("%B"))
-        Year1 = datetime.datetime.strptime(fecha_inicio, '%Y-%m-%d').year
-        Year2 = datetime.datetime.strptime(fecha_fin, '%Y-%m-%d').year
+        Year1, Year2 = datetime.datetime.strptime(fecha_inicio, '%Y-%m-%d').year, datetime.datetime.strptime(fecha_fin,
+                                                                                                             '%Y-%m-%d').year
 
         month_year = self.generate_month_year_vector(Year1, Year2)
 
-        df_d1, df_d2 = self.read_data_files(selected_options, ciu, month_year, sheet_name1, sheet_name2, sheet_name3)
+        df_d1, df_d2, df_d3 = self.read_data_files(selected_options, ciu, month_year, sheet_name1, sheet_name2,
+                                                   sheet_name3)
 
-        df_original1 = pd.DataFrame(df_d1,
-                                    columns=['Tiempo', 'Frecuencia (Hz)', 'Level (dBµV/m)', 'Offset (Hz)', 'FM (Hz)',
-                                             'Bandwidth (Hz)'])
-        df_original2 = pd.DataFrame(df_d2,
-                                    columns=['Tiempo', 'Frecuencia (Hz)', 'Level (dBµV/m)', 'Offset (Hz)', 'AM (%)',
-                                             'Bandwidth (Hz)'])
+        df_original1 = pd.DataFrame(df_d1, columns=settings.COLUMNS_FM)
+        df_original1['Tiempo'] = pd.to_datetime(df_original1['Tiempo'], format="%d/%m/%Y %H:%M:%S.%f")
+        df_original1['Tiempo'] = df_original1['Tiempo'].dt.strftime('%Y-%m-%d %H:%M:%S')
 
-        return df_original1, df_original2
+        df_original2 = pd.DataFrame(df_d2, columns=settings.COLUMNS_TV)
+        df_original2['Tiempo'] = pd.to_datetime(df_original2['Tiempo'], format="%d/%m/%Y %H:%M:%S.%f")
+        df_original2['Tiempo'] = df_original2['Tiempo'].dt.strftime('%Y-%m-%d %H:%M:%S')
+
+        if df_d3 is not None:
+            df_original3 = pd.DataFrame(df_d3, columns=settings.COLUMNS_AM)
+            # Ensure 'Tiempo' column is of datetime
+            df_original3['Tiempo'] = pd.to_datetime(df_original3['Tiempo'], format="%d/%m/%Y %H:%M:%S.%f")
+            # Convert datetime values to string representation
+            df_original3['Tiempo'] = df_original3['Tiempo'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            df_original3 = pd.DataFrame()
+
+        return df_original1, df_original2, df_original3
 
     def translate_month(self, month):
         return self.MONTH_TRANSLATIONS.get(month, month)
@@ -90,23 +65,26 @@ class GeneralReportView(APIView):
         return [num for elem in vector for num in elem]
 
     def read_data_files(self, selected_options, ciu, month_year, sheet_name1, sheet_name2, sheet_name3):
-        df_d1 = []
-        df_d2 = []
-        m = int(month_year.index("_".join((self.translate_month(selected_options['start_date'].strftime("%B")),
-                                           str(selected_options['start_date'].year)))))
-        n = int(month_year.index("_".join((self.translate_month(selected_options['end_date'].strftime("%B")),
-                                           str(selected_options['end_date'].year)))))
+        df_d1, df_d2, df_d3 = [], [], []
+        m, n = int(month_year.index("_".join((self.translate_month(selected_options['start_date'].strftime("%B")),
+                                              str(selected_options['start_date'].year))))), int(month_year.index(
+            "_".join((self.translate_month(selected_options['end_date'].strftime("%B")),
+                      str(selected_options['end_date'].year)))))
+
         for mes in month_year[m:n + 1]:
-            u = self.read_csv_file(f'{settings.SERVER_ROUTE}/{ciu}/FM_{ciu}_{mes}.csv', settings.COLUMNS_FM)
-            df_d1.append(u)
+            df_d1.append(self.read_csv_file(f'{settings.SERVER_ROUTE}/{ciu}/FM_{ciu}_{mes}.csv', settings.COLUMNS_FM))
+            df_d2.append(self.read_csv_file(f'{settings.SERVER_ROUTE}/{ciu}/TV_{ciu}_{mes}.csv', settings.COLUMNS_TV))
 
-            v = self.read_csv_file(f'{settings.SERVER_ROUTE}/{ciu}/TV_{ciu}_{mes}.csv', settings.COLUMNS_TV)
-            df_d2.append(v)
+            # Only assign df_d3 if sheet_name3 is not None
+            if sheet_name3:
+                current_df_d3 = self.read_csv_file(f'{settings.SERVER_ROUTE}/{ciu}/AM_{ciu}_{mes}.csv',
+                                                   settings.COLUMNS_AM)
+                df_d3.append(current_df_d3)
 
-        df_d1 = np.concatenate(df_d1)
-        df_d2 = np.concatenate(df_d2)
-
-        return df_d1, df_d2
+        if df_d3:
+            return np.concatenate(df_d1), np.concatenate(df_d2), np.concatenate(df_d3)
+        else:
+            return np.concatenate(df_d1), np.concatenate(df_d2), None
 
     def read_csv_file(self, file_path, columns):
         try:
@@ -121,30 +99,18 @@ class GeneralReportView(APIView):
         return pn.serve(general_report_panel)
 
     def create_general_report_panel(self, options):
-        cities = json.loads(settings.CITIES)
+        start_date_picker, end_date_picker = pn.widgets.DatePicker(name='Start Date'), pn.widgets.DatePicker(
+            name='End Date')
+        city_dropdown = pn.widgets.Select(name='City', options=json.loads(settings.CITIES))
+        checkbox1, checkbox2, checkbox3 = [pn.widgets.Checkbox(name=f'Checkbox {i}', value=False) for i in range(1, 4)]
+        data_frame_widget1, data_frame_widget2, data_frame_widget3 = [
+            pn.widgets.DataFrame(name=f'Customized Data {i}', value=pd.DataFrame()) for i in range(1, 4)]
 
-        start_date_picker = pn.widgets.DatePicker(name='Start Date')
-        end_date_picker = pn.widgets.DatePicker(name='End Date')
-        city_dropdown = pn.widgets.Select(name='City', options=cities)
-        checkbox1 = pn.widgets.Checkbox(name='Checkbox 1', value=False)
-        checkbox2 = pn.widgets.Checkbox(name='Checkbox 2', value=False)
-        checkbox3 = pn.widgets.Checkbox(name='Checkbox 3', value=False)
-
-        data_frame_widget1 = pn.widgets.DataFrame(name='Customized Data 1')
-        data_frame_widget1.value = pd.DataFrame()
-
-        data_frame_widget2 = pn.widgets.DataFrame(name='Customized Data 2')
-        data_frame_widget2.value = pd.DataFrame()
+        # Arrange the data frame widgets in a row
+        data_frame_row = pn.Row(data_frame_widget1, data_frame_widget2, data_frame_widget3)
 
         general_report_panel = pn.Column(
-            start_date_picker,
-            end_date_picker,
-            city_dropdown,
-            checkbox1,
-            checkbox2,
-            checkbox3,
-            data_frame_widget1,
-            data_frame_widget2,
+            start_date_picker, end_date_picker, city_dropdown, checkbox1, checkbox2, checkbox3, data_frame_row
         )
 
         def update_data(event):
@@ -157,18 +123,22 @@ class GeneralReportView(APIView):
                     'checkbox2': checkbox2.value,
                     'checkbox3': checkbox3.value,
                 }
-                customized_data1, customized_data2 = self.customize_data(selected_options)
+                customized_data1, customized_data2, customized_data3 = self.customize_data(selected_options)
                 data_frame_widget1.value = customized_data1
                 data_frame_widget2.value = customized_data2
+                if not customized_data3.empty:
+                    data_frame_widget3.value = customized_data3
+                else:
+                    data_frame_widget3.value = pd.DataFrame()
+
             else:
                 data_frame_widget1.value = pd.DataFrame()
                 data_frame_widget2.value = pd.DataFrame()
+                data_frame_widget3.value = pd.DataFrame()
 
-        start_date_picker.param.watch(update_data, 'value')
-        end_date_picker.param.watch(update_data, 'value')
-        city_dropdown.param.watch(update_data, 'value')
-        checkbox1.param.watch(update_data, 'value')
-        checkbox2.param.watch(update_data, 'value')
-        checkbox3.param.watch(update_data, 'value')
+        param_watch_list = [start_date_picker, end_date_picker, city_dropdown, checkbox1, checkbox2, checkbox3]
+
+        for widget in param_watch_list:
+            widget.param.watch(update_data, 'value')
 
         return general_report_panel
