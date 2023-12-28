@@ -99,18 +99,22 @@ class GeneralReportView(APIView):
         return pn.serve(general_report_panel)
 
     def create_general_report_panel(self, options):
-        start_date_picker, end_date_picker = pn.widgets.DatePicker(name='Start Date'), pn.widgets.DatePicker(
-            name='End Date')
-        city_dropdown = pn.widgets.Select(name='City', options=json.loads(settings.CITIES))
+        start_date_picker, end_date_picker = pn.widgets.DatePicker(name='Fecha Inicio'), pn.widgets.DatePicker(
+            name='Fecha Fin')
+        city_dropdown = pn.widgets.Select(name='Ciudad', options=json.loads(settings.CITIES))
         checkbox1, checkbox2, checkbox3 = [pn.widgets.Checkbox(name=f'Checkbox {i}', value=False) for i in range(1, 4)]
         data_frame_widget1, data_frame_widget2, data_frame_widget3 = [
             pn.widgets.DataFrame(name=f'Customized Data {i}', value=pd.DataFrame()) for i in range(1, 4)]
 
-        # Arrange the data frame widgets in a row
-        data_frame_row = pn.Row(data_frame_widget1, data_frame_widget2, data_frame_widget3)
+        # Use Tabs to organize data frame widgets
+        tabs = pn.Tabs(
+            ('Radiodifusión FM', data_frame_widget1),
+            ('Televisión (Analógica/Digital)', data_frame_widget2),
+            ('Radiodifusión AM', data_frame_widget3)
+        )
 
         general_report_panel = pn.Column(
-            start_date_picker, end_date_picker, city_dropdown, checkbox1, checkbox2, checkbox3, data_frame_row
+            start_date_picker, end_date_picker, city_dropdown, checkbox1, checkbox2, checkbox3, tabs
         )
 
         def update_data(event):
